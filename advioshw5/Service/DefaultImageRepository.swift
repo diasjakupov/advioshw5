@@ -34,30 +34,35 @@ class ImageRepository: ImageRepositoryProtocol {
     
     private func fetchImage(completion: @escaping (ImageModel) -> Void) {
         let randomHeight = Int.random(in: 150...300)
-        let urlString = generateImageUrl(height: randomHeight)
+        let id = Int.random(in: 1...30)
+        let urlString = generateImageUrl(id: id, height: randomHeight)
         
         guard let url = URL(string: urlString) else {
             completion(createErrorImage(height: randomHeight))
             return
         }
         
-        if let cachedImage = imageCache.object(forKey: urlString as NSString) {
+        
+        if let cachedImage = imageCache.object(forKey: id.description as NSString) {
+            
+            print("cached image: \(id) \(url)")
+            
             completion(ImageModel(image: cachedImage, hasError: false, height: randomHeight))
             return
         }
         
-        downloadImage(from: url, urlString: urlString, height: randomHeight, completion: completion)
+        downloadImage(from: url, id: id, height: randomHeight, completion: completion)
     }
     
-    private func generateImageUrl(height: Int) -> String {
-        return "https://picsum.photos/\(imageSize)/\(height)?random=\(UUID().uuidString)"
+    private func generateImageUrl(id: Int, height: Int) -> String {
+        return "https://picsum.photos/id/\(id)/\(imageSize)/\(height)"
     }
     
-    private func downloadImage(from url: URL, urlString: String, height: Int, completion: @escaping (ImageModel) -> Void) {
+    private func downloadImage(from url: URL, id: Int, height: Int, completion: @escaping (ImageModel) -> Void) {
         DispatchQueue.global(qos: .background).async {
             if let data = try? Data(contentsOf: url),
                let image = UIImage(data: data) {
-                self.imageCache.setObject(image, forKey: urlString as NSString)
+                self.imageCache.setObject(image, forKey: id.description as NSString)
                 completion(ImageModel(image: image, hasError: false, height: height))
             } else {
                 completion(self.createErrorImage(height: height))
